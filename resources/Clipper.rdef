@@ -1,0 +1,8 @@
+resource app_signature "application/x-vnd.airOS-Clipper";
+resource app_flags B_SINGLE_LAUNCH | B_BACKGROUND_APP;
+resource vector_icon { import "clipper.hvif" };
+resource app_version {
+ major = 1, middle = 0, minor = 0, variety = B_APPV_FINAL, internal = 0,
+ short_info = "Clipper 1.0.0 — clipboard history",
+ long_info = "Clipboard history for air/OS and Haiku. Text, images, search, pinning, and paste from the Deskbar."
+};

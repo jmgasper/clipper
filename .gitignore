@@ -1,0 +1,5 @@
+build-*/
+artifacts/*
+!artifacts/.gitkeep
+__pycache__/
+*.log

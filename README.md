@@ -4,6 +4,19 @@ A native clipboard manager for **air/OS and Haiku**, built with the Haiku kits.
 Runs quietly in the Deskbar and captures clipboard changes from any application,
 including menu copy, **Alt+C**, **Alt+X**, and screenshots.
 
+<!-- airos-ci:latest-builds:start -->
+## Latest builds
+
+Built automatically by air/OS CI from commit `cf07f8d` on 2026-10-05 ([all files](https://github.com/jmgasper/clipper/releases/tag/latest)).
+
+| Architecture | Package |
+|---|---|
+| arm64 | [clipper-1.0.0-1-arm64.hpkg](https://github.com/jmgasper/clipper/releases/download/latest/clipper-1.0.0-1-arm64.hpkg) |
+| x86_64 | [clipper-1.0.0-1-x86_64.hpkg](https://github.com/jmgasper/clipper/releases/download/latest/clipper-1.0.0-1-x86_64.hpkg) |
+
+Install with `pkgman install <file>`, or copy the file into `/boot/system/packages`. Haiku SDK: x86_64 hrev60206-669-g9dc439ceeb, arm64 hrev60206-669-g9dc439ceeb.
+<!-- airos-ci:latest-builds:end -->
+
 ## Using Clipper
 
 - **Tap Alt+V**: paste the current clipboard, normally the last item copied or cut.

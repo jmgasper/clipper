@@ -61,7 +61,7 @@ No input_server restart is needed; allow a few seconds for add-on activation.
 
 ```sh
 bash tools/install.sh --uninstall  # retains saved history
-make package                      # artifacts/clipper-1.0.0-1-x86_64.hpkg
+make package                      # artifacts/clipper-1.0.0-2-x86_64.hpkg
 ```
 
 For a packaged install, remove the development install first, then use

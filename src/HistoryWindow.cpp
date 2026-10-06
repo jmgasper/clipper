@@ -50,10 +50,12 @@ public:
             SetHighUIColor(B_DOCUMENT_TEXT_COLOR); DrawString("Image preview", BPoint(12, 25)); return;
         }
         BRect source = bitmap->Bounds(); BRect target = Bounds().InsetByCopy(10, 10);
-        float scale = std::min(target.Width() / source.Width(), target.Height() / source.Height());
-        float w = source.Width() * scale, h = source.Height() * scale;
-        BRect dest(target.left + (target.Width()-w)/2, target.top + (target.Height()-h)/2, 0, 0);
-        dest.right = dest.left+w; dest.bottom = dest.top+h;
+        if (!target.IsValid()) return;
+        float scale = std::min((target.Width()+1) / (source.Width()+1),
+            (target.Height()+1) / (source.Height()+1));
+        float w = (source.Width()+1) * scale, h = (source.Height()+1) * scale;
+        BRect dest(target.left + (target.Width()+1-w)/2, target.top + (target.Height()+1-h)/2, 0, 0);
+        dest.right = dest.left+w-1; dest.bottom = dest.top+h-1;
         SetDrawingMode(B_OP_ALPHA); SetBlendingMode(B_PIXEL_ALPHA, B_ALPHA_OVERLAY);
         DrawBitmap(bitmap, source, dest, B_FILTER_BITMAP_BILINEAR); SetDrawingMode(B_OP_COPY);
     }
@@ -114,7 +116,7 @@ private: BString title,subtitle; BBitmap* thumbnail = nullptr;
 };
 HistoryWindow::HistoryWindow() : BWindow(BRect(160,100,720,770), "Clipper", B_TITLED_WINDOW,
     B_ASYNCHRONOUS_CONTROLS | B_AUTO_UPDATE_SIZE_LIMITS | B_NOT_ZOOMABLE) {
-    search = new BTextControl("search", "", "", new BMessage(kSearch));
+    search = new BTextControl("search", "Search:", "", new BMessage(kSearch));
     search->SetModificationMessage(new BMessage(kSearch)); search->TextView()->SetExplicitMinSize(BSize(250, B_SIZE_UNSET));
     search->TextView()->SetToolTip("Search clipboard text, type, or source. Fuzzy matching is supported.");
     auto heading=new BStringView("heading","Clipboard history"); heading->SetFont(be_bold_font);
@@ -136,10 +138,10 @@ HistoryWindow::HistoryWindow() : BWindow(BRect(160,100,720,770), "Clipper", B_TI
     remove=new BButton("delete","Delete",new BMessage(kDelete));
     auto clear=new BButton("clear","Clear…",new BMessage(kClear));
     auto settings=new BButton("settings","Settings…",new BMessage(kSettings));
-    auto pause=new BButton("pause","Pause / resume",new BMessage(kPause));
+    pause=new BButton("pause","Pause recording",new BMessage(kPause));
     status=new BStringView("status","Copy something to get started.");
     status->SetTruncation(B_TRUNCATE_END); status->SetExplicitMinSize(BSize(200,B_SIZE_UNSET));
-    status->SetExplicitMaxSize(BSize(280,B_SIZE_UNSET));
+    status->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED,B_SIZE_UNSET));
     BLayoutBuilder::Group<>(this,B_VERTICAL,10).SetInsets(16)
         .AddGroup(B_HORIZONTAL).Add(heading).AddGlue().Add(settings).End()
         .Add(help).Add(search).Add(scroll)
@@ -148,7 +150,12 @@ HistoryWindow::HistoryWindow() : BWindow(BRect(160,100,720,770), "Clipper", B_TI
         .AddGroup(B_HORIZONTAL,8).Add(status).AddGlue().Add(pause).End();
     SetDefaultButton(paste); CenterOnScreen();
 }
-bool HistoryWindow::QuitRequested() { Hide(); return false; }
+void HistoryWindow::Dismiss() {
+    // BWindow counts Hide/Show calls. Repeated dismissal of this popup must
+    // not require multiple history shortcuts to make it visible again.
+    if (!IsHidden()) Hide();
+}
+bool HistoryWindow::QuitRequested() { Dismiss(); return false; }
 void HistoryWindow::Open() {
     search->SetText(""); Rebuild();
     if(!clips.empty()) for(int32 i=0;i<list->CountItems();++i) {
@@ -160,6 +167,7 @@ void HistoryWindow::Open() {
 }
 void HistoryWindow::Update(const History& history, bool paused, const char* notice) {
     clips=history.clips;
+    pause->SetLabel(paused ? "Resume recording" : "Pause recording");
     BString line; line.SetToFormat("%zu clips%s",clips.size(),paused?" · paused":"");
     if (notice && *notice) { line << " · " << notice; }
     status->SetText(line); status->SetToolTip(line.String());
@@ -188,7 +196,9 @@ void HistoryWindow::Selection() {
     BBitmap* bitmap=clip && clip->kind.FindFirst("Image")==0?Decode(clip->data):nullptr;
     image->Set(bitmap);
     previewLayout->SetVisibleItem(bitmap ? 1 : 0);
-    text->SetText(clip?clip->text.String():"No matching clips. Copy text or an image in any app.");
+    text->SetText(clip ? clip->text.String() : clips.empty()
+        ? "Copy text or an image in any app to start your history."
+        : "No matching clips. Try a different search.");
 }
 void HistoryWindow::Send(uint32 what) {
     auto item=dynamic_cast<ClipItem*>(list->ItemAt(list->CurrentSelection())); if (!item) return;
@@ -211,31 +221,35 @@ void HistoryWindow::MessageReceived(BMessage* msg) {
 void HistoryWindow::DispatchMessage(BMessage* msg, BHandler* target) {
     if(msg->what==B_KEY_DOWN) {
         const char* bytes=msg->GetString("bytes","");
-        if(bytes[0]==B_ESCAPE) { Hide(); return; }
-        if(bytes[0]==B_ENTER) { Send(kChoose); return; }
-        if(bytes[0]==B_UP_ARROW || bytes[0]==B_DOWN_ARROW) {
+        if(bytes[0]==B_ESCAPE) { Dismiss(); return; }
+        bool navigating = target==list || target==search || target==search->TextView();
+        if(navigating && bytes[0]==B_ENTER) { Send(kChoose); return; }
+        if(navigating && (bytes[0]==B_UP_ARROW || bytes[0]==B_DOWN_ARROW)) {
             int32 count=list->CountItems(); if(count>0) {
                 int32 selected=list->CurrentSelection()+(bytes[0]==B_DOWN_ARROW?1:-1);
                 list->Select(std::max(int32(0),std::min(count-1,selected))); list->ScrollToSelection();
             } return;
         }
         if(target==list && bytes[0]==B_DELETE) { Send(kDelete); return; }
-        if(target==list && bytes[0]>=32 && !(msg->GetInt32("modifiers",0)&B_COMMAND_KEY)) {
+        if(target==list && static_cast<unsigned char>(bytes[0])>=32
+            && !(msg->GetInt32("modifiers",0)&(B_COMMAND_KEY|B_CONTROL_KEY))) {
             search->MakeFocus(true); search->TextView()->Insert(bytes); Rebuild(); return;
         }
     }
     BWindow::DispatchMessage(msg,target);
 }
 SettingsWindow::SettingsWindow(int32 cap,bool remember,bool autoValue):BWindow(BRect(0,0,430,220),"Clipper settings",B_TITLED_WINDOW,
-    B_ASYNCHRONOUS_CONTROLS|B_AUTO_UPDATE_SIZE_LIMITS|B_NOT_RESIZABLE|B_NOT_ZOOMABLE) {
+    B_ASYNCHRONOUS_CONTROLS|B_AUTO_UPDATE_SIZE_LIMITS|B_NOT_RESIZABLE|B_NOT_ZOOMABLE|B_CLOSE_ON_ESCAPE) {
     char number[16]; snprintf(number,sizeof(number),"%d",cap);
     limit=new BTextControl("limit","History limit (10–1000):",number,nullptr);
     persist=new BCheckBox("persist","Remember history between restarts",nullptr); persist->SetValue(remember);
     autoPaste=new BCheckBox("auto","Paste into the previous app when selecting a clip",nullptr); autoPaste->SetValue(autoValue);
     auto info=new BStringView("info","Images and text are saved locally, up to 128 MiB.");
     auto save=new BButton("save","Save",new BMessage(kSaveSettings));
+    auto cancel=new BButton("cancel","Cancel",new BMessage(B_QUIT_REQUESTED));
     BLayoutBuilder::Group<>(this,B_VERTICAL,12).SetInsets(18).Add(limit).Add(persist).Add(autoPaste).Add(info)
-        .AddGroup(B_HORIZONTAL).AddGlue().Add(save).End(); SetDefaultButton(save); CenterOnScreen();
+        .AddGroup(B_HORIZONTAL).AddGlue().Add(cancel).Add(save).End(); SetDefaultButton(save); CenterOnScreen();
+    limit->MakeFocus(true); limit->TextView()->SelectAll();
 }
 void SettingsWindow::MessageReceived(BMessage* msg) {
     if(msg->what!=kSaveSettings) { BWindow::MessageReceived(msg); return; }

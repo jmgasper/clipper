@@ -3,8 +3,14 @@
 Run on Haiku:
 
 ```sh
-make -j8 all check build-haiku/fixture build-haiku/paste_integration
+make -j8 all check check-ui build-haiku/fixture build-haiku/paste_integration
 ```
+
+`ui_tests` checks search arrow navigation, Enter on a focused Settings button,
+reopening after repeated dismissal, explicit pause/resume labels, a one-pixel-wide
+image preview, and the settings Cancel button and initial focus. It runs against
+an in-memory history and does
+not read or change saved clips.
 
 `history_tests` checks stable-ID deduplication, newest-first ordering, pin
 protection, count eviction, fuzzy search, rich-text preservation, byte-identical

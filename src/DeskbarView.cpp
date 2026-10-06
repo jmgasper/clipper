@@ -7,12 +7,17 @@
 #include <PopUpMenu.h>
 #include <MenuItem.h>
 #include <Deskbar.h>
+#include <AppFileInfo.h>
+#include <Bitmap.h>
+#include <File.h>
+#include <image.h>
 #include <cmath>
 namespace clipper {
 class DeskbarView : public BView {
 public:
-    DeskbarView(BRect frame) : BView(frame,"Clipper",B_FOLLOW_NONE,B_WILL_DRAW) { SetToolTip("Clipper — clipboard history\nHold Alt+V or press Shift+Alt+V"); }
-    DeskbarView(BMessage* archive) : BView(archive) { SetToolTip("Clipper — clipboard history"); }
+    DeskbarView(BRect frame) : BView(frame,"Clipper",B_FOLLOW_NONE,B_WILL_DRAW) { InitIcon(); }
+    DeskbarView(BMessage* archive) : BView(archive) { InitIcon(); }
+    ~DeskbarView() override { delete icon; }
     static BArchivable* Instantiate(BMessage* archive);
     status_t Archive(BMessage* archive,bool deep=true) const override {
         status_t status=BView::Archive(archive,deep);
@@ -22,11 +27,11 @@ public:
     }
     void AttachedToWindow() override { AdoptParentColors(); }
     void Draw(BRect) override {
-        float scale=(Bounds().Height()+1)/20; PushState(); SetScale(scale);
-        SetHighColor(31,104,120); FillRoundRect(BRect(3,3,16,18),2,2);
-        SetHighColor(231,246,247); FillRoundRect(BRect(5,5,14,16),1,1);
-        SetHighColor(25,78,91); FillRoundRect(BRect(7,1,12,6),1,1);
-        SetHighColor(59,126,140); StrokeLine(BPoint(7,9),BPoint(12,9)); StrokeLine(BPoint(7,12),BPoint(12,12));
+        if (!icon) return;
+        PushState();
+        SetDrawingMode(B_OP_ALPHA);
+        SetBlendingMode(B_PIXEL_ALPHA, B_ALPHA_OVERLAY);
+        DrawBitmap(icon, BPoint(0, 0));
         PopState();
     }
     void MouseDown(BPoint point) override {
@@ -45,6 +50,28 @@ public:
         if(app.IsValid()) app.SendMessage(&msg);
         else be_roster->Launch(kSignature,&msg);
     }
+private:
+    void InitIcon() {
+        SetToolTip("Clipper — clipboard history\nHold Alt+V or press Shift+Alt+V");
+        // This view runs inside Deskbar: load the resource from the image that
+        // contains our code, not Deskbar's own application resources.
+        image_info image;
+        int32 cookie = 0;
+        addr_t address = reinterpret_cast<addr_t>(&DeskbarView::Instantiate);
+        while (get_next_image_info(B_CURRENT_TEAM, &cookie, &image) == B_OK) {
+            if (address < reinterpret_cast<addr_t>(image.text)
+                || address >= reinterpret_cast<addr_t>(image.text) + image.text_size) continue;
+            BFile file(image.name, B_READ_ONLY);
+            BAppFileInfo info(&file);
+            int32 size = Bounds().IntegerHeight() + 1;
+            icon = new BBitmap(BRect(0, 0, size-1, size-1), B_RGBA32);
+            if (icon->InitCheck() != B_OK || info.GetIcon(icon, static_cast<icon_size>(size)) != B_OK) {
+                delete icon; icon = nullptr;
+            }
+            break;
+        }
+    }
+    BBitmap* icon = nullptr;
 };
 BArchivable* DeskbarView::Instantiate(BMessage* archive) {
     return validate_instantiation(archive,"clipper::DeskbarView") ? new DeskbarView(archive) : nullptr;

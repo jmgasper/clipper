@@ -38,3 +38,11 @@ $(BUILD)/fixture: tests/Fixture.cpp $(BUILD)/src/History.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(APP_LDFLAGS) -o $@ $^ -lbe -ltracker -ltranslation $(APP_LDEND)
 $(BUILD)/paste_integration: tests/PasteIntegration.cpp $(BUILD)/src/History.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(APP_LDFLAGS) -o $@ $^ -lbe $(APP_LDEND)
+
+.PHONY: check-ui icon
+icon:
+	python3 tools/make-icon.py
+$(BUILD)/ui_tests: tests/UITests.cpp $(BUILD)/src/HistoryWindow.o $(BUILD)/src/History.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(APP_LDFLAGS) -o $@ $^ -lbe -ltranslation $(APP_LDEND)
+check-ui: $(BUILD)/ui_tests
+	$(BUILD)/ui_tests

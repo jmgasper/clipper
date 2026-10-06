@@ -1,5 +1,5 @@
 name clipper
-version 1.0.0-1
+version 1.0.0-2
 architecture x86_64
 summary "Clipboard history for air/OS and Haiku"
 description "Clipper runs in the Deskbar and remembers text, rich text, images, and file references. Search or pin clips, restore every format, and paste back into the previous window. Tap Alt+V for ordinary paste; hold Alt+V or press Shift+Alt+V for history. Native input_server add-ons provide global shortcuts and paste injection."

@@ -50,7 +50,7 @@ public:
         switch(msg->what) {
             case B_CLIPBOARD_CHANGED: Capture(); break;
             case kShow: if(window) Show(msg->GetBool("toggle",false)); else wantsHistory=true; break;
-            case kHide: if(window && window->Lock()) { window->Hide(); window->Unlock(); } break;
+            case kHide: if(window && window->Lock()) { window->Dismiss(); window->Unlock(); } break;
             case kChoose: Choose(msg->GetInt64("id",0),autoPaste); break;
             case kForcePaste: Choose(msg->GetInt64("id",0),true); break;
             case kCopyOnly: Choose(msg->GetInt64("id",0),false); break;
@@ -133,7 +133,7 @@ private:
     void Show(bool toggle) {
         if(getenv("CLIPPER_TRACE")) { printf("show toggle=%d hidden=%d\n",toggle,window->IsHidden()); fflush(stdout); }
         if(window->Lock()) {
-            if(toggle && !window->IsHidden()) window->Hide();
+            if(toggle && !window->IsHidden()) window->Dismiss();
             else { if(window->IsHidden()) RememberTarget(); window->Open(); be_roster->ActivateApp(Team()); }
             window->Unlock();
         }
@@ -146,7 +146,7 @@ private:
         status_t result=be_clipboard->Commit(); selfCommit=be_clipboard->LocalCount(); be_clipboard->Unlock();
         if(result!=B_OK) { notice="Could not restore the clipboard."; Refresh(); return; }
         notice="";
-        if(window->Lock()) { window->Hide(); window->Unlock(); }
+        if(window->Lock()) { window->Dismiss(); window->Unlock(); }
         if(!paste) return;
         if(targetTeam<0 || targetTeam==Team()) { notice="Copied. Switch to your app and press Alt+V."; Refresh(); return; }
         if(targetToken>=0) do_window_action(targetToken,B_BRING_TO_FRONT,BRect(),false);

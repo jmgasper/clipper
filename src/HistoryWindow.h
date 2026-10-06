@@ -10,6 +10,7 @@ public:
     HistoryWindow();
     void Update(const History& history, bool paused, const char* notice = "");
     void Open();
+    void Dismiss();
     bool QuitRequested() override;
     void MessageReceived(BMessage* msg) override;
     void DispatchMessage(BMessage* msg, BHandler* target) override;
@@ -20,7 +21,7 @@ private:
     std::vector<Clip> clips;
     BTextControl* search; BListView* list; BStringView* status;
     BTextView* text; ImageView* image; BCardLayout* previewLayout;
-    BButton* pin; BButton* paste; BButton* copy; BButton* remove;
+    BButton* pin; BButton* paste; BButton* copy; BButton* remove; BButton* pause;
 };
 class SettingsWindow : public BWindow {
 public:

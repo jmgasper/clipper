@@ -7,14 +7,14 @@ including menu copy, **Alt+C**, **Alt+X**, and screenshots.
 <!-- airos-ci:latest-builds:start -->
 ## Latest builds
 
-Built automatically by air/OS CI from commit `cf07f8d` on 2026-10-05 ([all files](https://github.com/jmgasper/clipper/releases/tag/latest)).
+Built automatically by air/OS CI from commit `ee52973` on 2026-10-06 ([all files](https://github.com/jmgasper/clipper/releases/tag/latest)).
 
 | Architecture | Package |
 |---|---|
-| arm64 | [clipper-1.0.0-1-arm64.hpkg](https://github.com/jmgasper/clipper/releases/download/latest/clipper-1.0.0-1-arm64.hpkg) |
-| x86_64 | [clipper-1.0.0-1-x86_64.hpkg](https://github.com/jmgasper/clipper/releases/download/latest/clipper-1.0.0-1-x86_64.hpkg) |
+| arm64 | [clipper-1.0.0-2-arm64.hpkg](https://github.com/jmgasper/clipper/releases/download/latest/clipper-1.0.0-2-arm64.hpkg) |
+| x86_64 | [clipper-1.0.0-2-x86_64.hpkg](https://github.com/jmgasper/clipper/releases/download/latest/clipper-1.0.0-2-x86_64.hpkg) |
 
-Install with `pkgman install <file>`, or copy the file into `/boot/system/packages`. Haiku SDK: x86_64 hrev60206-669-g9dc439ceeb, arm64 hrev60206-669-g9dc439ceeb.
+Install with `pkgman install <file>`, or copy the file into `/boot/system/packages`. Haiku SDK: x86_64 hrev60206-683-g3c1ce90a17, arm64 hrev60206-683-g3c1ce90a17.
 <!-- airos-ci:latest-builds:end -->
 
 ## Using Clipper
